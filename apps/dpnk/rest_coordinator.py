@@ -41,11 +41,16 @@ class CompanyAdminDoesNotExist(serializers.ValidationError):
 
 class FeeApprovalSet(viewsets.ReadOnlyModelViewSet, UserAttendanceMixin):
     def get_queryset(self):
-        company_admin = CompanyAdmin.objects.get(
-            userprofile=self.ua().userprofile.pk,
-            campaign__slug=self.request.subdomain,
-            company_admin_approved="approved",
-        )
+
+        try:
+            company_admin = CompanyAdmin.objects.get(
+                userprofile=self.ua().userprofile.pk,
+                campaign__slug=self.request.subdomain,
+                company_admin_approved="approved",
+            )
+        except CompanyAdmin.DoesNotExist:
+            raise CompanyAdminDoesNotExist
+
         queryset = (
             UserAttendance.objects.filter(
                 team__subsidiary__company=company_admin.administrated_company,
