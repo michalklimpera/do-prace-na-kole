@@ -1402,6 +1402,23 @@ class HasUserVerifiedEmailAddress(APIView):
         )
 
 
+class CitiesSerializer(serpy.Serializer):
+    id = serpy.IntField()
+    name = serpy.StrField()
+
+
+class CitiesSet(viewsets.ReadOnlyModelViewSet):
+    # fetch all available cities (for campaign)
+    def get_queryset(self):
+        city_ids = CityInCampaign.objects.filter(
+            campaign__slug=self.request.subdomain
+        ).values_list("city", flat=True)
+        return City.objects.filter(id__in=city_ids)
+
+    serializer_class = CitiesSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
 class AddressSerializer(serpy.Serializer):
     street = serpy.StrField()
     street_number = serpy.StrField()
@@ -1608,6 +1625,7 @@ router.register(
     r"logged-in-user-list", LoggedInUsersListGet, basename="logged_in_user_list"
 )
 
+router.register(r"cities", CitiesSet, basename="cities")
 router.register(r"organizations", CompaniesSet, basename="organizations")
 router.register(
     r"organizations/(?P<organization_id>\d+)/subsidiaries",

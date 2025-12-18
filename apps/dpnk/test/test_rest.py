@@ -2111,6 +2111,39 @@ class RegistrationTest(TestCase):
         self.assertTrue(has_verified_email(user, registration_data["email"]))
 
 
+@override_settings(
+    SITE_ID=2,
+    FAKE_DATE=datetime.date(year=2010, month=11, day=20),
+)
+class CitiesSetTest(TestCase):
+    fixtures = [
+        "dump",
+    ]
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient(
+            HTTP_HOST="testing-campaign.testserver", HTTP_REFERER="test-referer"
+        )
+        self.client.force_login(
+            User.objects.get(pk=1), settings.AUTHENTICATION_BACKENDS[0]
+        )
+        self.maxDiff = None
+
+    def test_get(self):
+        address = reverse("cities-list")
+        response = self.client.get(address)
+        self.assertEqual(response.status_code, 200)
+        self.assertJSONEqual(
+            response.content.decode(),
+            {
+                "count": 2,
+                "next": None,
+                "previous": None,
+                "results": [{"id": 2, "name": "Brno"}, {"id": 1, "name": "Praha"}],
+            },
+        )
+
 
 @override_settings(
     SITE_ID=2,
