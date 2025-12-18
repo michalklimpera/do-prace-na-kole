@@ -9,8 +9,14 @@ from .models import (
     CompanyAdmin,
     Payment,
     Status,
+    Company,
 )
 
+from .models.company import CompanyInCampaign
+from .rest import (
+    AddressSerializer,
+    EmptyStrField,
+)
 from .middleware import get_or_create_userattendance
 import datetime
 
@@ -135,6 +141,63 @@ class ApprovePaymentsView(APIView, UserAttendanceMixin):
             )
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class UserAttendanceSerializer(serpy.Serializer):
+    id = serpy.IntField()
+    first_name = serpy.StrField(attr="userprofile.user.first_name")
+    last_name = serpy.StrField(attr="userprofile.user.last_name")
+    nickname = EmptyStrField(attr="userprofile.nickname")
+    email = serpy.StrField(attr="userprofile.user.email")
+    company_admission_fee = serpy.IntField(call=True)
+    payment_status = serpy.StrField()
+    # representative_payment = serpy.StrField(call=True)
+    created = serpy.StrField()
+
+
+class TeamSerializer(serpy.Serializer):
+    id = serpy.IntField()
+    name = serpy.StrField()
+    users = UserAttendanceSerializer(many=True)
+
+
+class SubsidiaryInCampaignSerializer(serpy.Serializer):
+    id = serpy.IntField(attr="subsidiary.id")
+    address = AddressSerializer(attr="subsidiary.address")
+    city = serpy.StrField(attr="subsidiary.city")
+    teams = TeamSerializer(many=True)
+
+
+class GetAttendanceSerializer(serpy.Serializer):
+    subsidiaries = SubsidiaryInCampaignSerializer(many=True)
+
+
+class GetAttendanceView(APIView, UserAttendanceMixin):
+    def get(self, request):
+
+        try:
+            company_admin = CompanyAdmin.objects.get(
+                userprofile=self.ua().userprofile.pk,
+                campaign__slug=self.request.subdomain,
+                company_admin_approved="approved",
+            )
+        except CompanyAdmin.DoesNotExist:
+            raise CompanyAdminDoesNotExist
+
+        company = Company.objects.get(
+            pk=company_admin.administrated_company_id,
+        )
+        """
+        ).select_related(
+            "userprofile__user",
+            "team",
+            "team__subsidiary",
+        """
+
+        cic = CompanyInCampaign(company, self.request.campaign)
+        return Response(GetAttendanceSerializer(cic).data)
+
+    permission_classes = [permissions.IsAuthenticated]
 
 
 router = routers.DefaultRouter()

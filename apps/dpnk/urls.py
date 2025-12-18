@@ -30,7 +30,11 @@ from .autocomplete_views import (
     SubsidiaryAutocomplete,
     TeamAutocomplete,
 )
-from .rest_coordinator import ApprovePaymentsView, router as coordinator_router
+from .rest_coordinator import (
+    ApprovePaymentsView,
+    GetAttendanceView,
+    router as coordinator_router,
+)
 from .views import (
     answers,
     questionnaire_answers,
@@ -600,5 +604,10 @@ urlpatterns = [
         "rest/coordinator/approve-payments/",
         ApprovePaymentsView.as_view(),
         name="approve-payments",
+    ),
+    path(
+        "rest/coordinator/get-attendance/",
+        GetAttendanceView.as_view(),
+        name="get-attendance",
     ),
 ]
