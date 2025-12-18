@@ -1589,6 +1589,74 @@ class SubsidiariesSet(viewsets.ModelViewSet):
         else:
             return SubsidiariesDeserializer
 
+
+class TeamsSerializer(serpy.Serializer):
+    id = serpy.IntField()
+    name = serpy.StrField(required=False)
+
+    members = RequestSpecificField(
+        lambda team, req: MinimalUserAttendanceSerializer(
+            team.members, context={"request": req}, many=True
+        ).data
+    )
+
+
+class TeamsDeserializer(serializers.HyperlinkedModelSerializer):
+    campaign_id = serializers.PrimaryKeyRelatedField(
+        queryset=Campaign.objects.all(), source="campaign"
+    )
+    subsidiary_id = serializers.PrimaryKeyRelatedField(
+        queryset=Subsidiary.objects.all(), source="subsidiary"
+    )
+    members = RequestSpecificField(
+        lambda team, req: MinimalUserAttendanceSerializer(
+            team.members, context={"request": req}, many=True
+        ).data
+    )
+
+    class Meta:
+        model = Team
+        fields = ("id", "name", "campaign_id", "subsidiary_id")
+
+    def to_representation(self, value):
+        data = super().to_representation(value)
+        del data["campaign_id"]
+        del data["subsidiary_id"]
+        return data
+
+
+class TeamsSet(viewsets.ModelViewSet):
+    # fetches all teams from a given subsidiary
+    def get_queryset(self):
+        subsidiary_id = self.kwargs["subsidiary_id"]
+        return Team.objects.filter(
+            subsidiary_id=subsidiary_id,
+            campaign_id=self.request.campaign.id,
+        )
+
+    def create(self, request, *args, **kwargs):
+
+        request_data = request.data.copy()
+        request_data["subsidiary_id"] = self.kwargs["subsidiary_id"]
+        request_data["campaign_id"] = self.request.campaign.id
+
+        serializer = self.get_serializer(data=request_data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
+
+    permission_classes = [permissions.AllowAny]
+
+    def get_serializer_class(self):
+        if self.action in ["retrieve", "list"]:
+            return TeamsSerializer
+        else:
+            return TeamsDeserializer
+
+
 router = routers.DefaultRouter()
 router.register(r"gpx", TripSet, basename="gpxfile")
 router.register(r"trips", TripRangeSet, basename="trip")
@@ -1631,4 +1699,7 @@ router.register(
     r"organizations/(?P<organization_id>\d+)/subsidiaries",
     SubsidiariesSet,
     basename="organization-subsidiaries",
+)
+router.register(
+    r"subsidiaries/(?P<subsidiary_id>\d+)/teams", TeamsSet, basename="subsidiary-teams"
 )
