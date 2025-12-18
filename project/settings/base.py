@@ -178,6 +178,7 @@ MIDDLEWARE = [
     "author.middlewares.AuthorDefaultBackendMiddleware",
     "dpnk.middleware.UserAttendanceMiddleware",
     "dpnk.middleware.MobileAppIntegration",
+    "dpnk.cache_middleware.RequestCacheMiddleware",
     "dpnk.votes.SecretBallotUserMiddleware",
     "raven.contrib.django.raven_compat.middleware.Sentry404CatchMiddleware",
 ]
