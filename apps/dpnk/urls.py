@@ -30,6 +30,7 @@ from .autocomplete_views import (
     SubsidiaryAutocomplete,
     TeamAutocomplete,
 )
+from .rest_coordinator import router as coordinator_router
 from .views import (
     answers,
     questionnaire_answers,
@@ -589,5 +590,10 @@ urlpatterns = [
         r"^admin/logged-in-user-list/$",
         views.LoggedInUsersListView.as_view(),
         name="logged_in_user_list",
+    ),
+    path(
+        "rest/coordinator/",
+        include(coordinator_router.urls),
+        name="coordinator_rest_api",
     ),
 ]
